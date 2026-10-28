@@ -1,0 +1,594 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Drawing Overlay — 工程圖版本比對</title><style>
+:root{font-family:Inter,'Segoe UI',Arial,sans-serif;color:#172438;background:#f4f7fb}*{box-sizing:border-box}body{margin:0}.wrap{max-width:1280px;margin:auto;padding:28px 20px}header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:22px}h1{margin:0;font-size:28px;letter-spacing:-.7px}h2{font-size:17px;margin:0 0 16px}.sub{color:#66758a;font-size:13px;margin-top:5px}.tag{background:#e5eefb;color:#2b5688;border-radius:30px;padding:7px 12px;font-size:12px}.layout{display:grid;grid-template-columns:340px 1fr;gap:18px}.panel{background:white;border:1px solid #e2e8f1;border-radius:15px;padding:20px;box-shadow:0 3px 12px #1d355708;margin-bottom:16px}.upload{display:block;border:1.5px dashed #aab9ca;background:#f9fbfe;padding:20px 14px;border-radius:12px;text-align:center;cursor:pointer;margin:9px 0 15px}.upload:hover{border-color:#3469b1;background:#f0f6ff}.upload b{display:block;margin-bottom:5px}.upload small{color:#75839a}input[type=file]{display:none}.fileinfo{font-size:12px;color:#4e657f;overflow-wrap:anywhere;margin-top:8px}.field{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:13px 0;font-size:14px}.field input[type=color]{width:56px;height:34px;border:1px solid #d3dce8;border-radius:8px;background:white;cursor:pointer;padding:3px}.field input[type=number]{width:75px;padding:8px;border:1px solid #cbd5e1;border-radius:7px}.field input[type=range]{width:100px;min-width:55px}.field label{white-space:nowrap}.field:has(input[type=color]){flex-wrap:wrap}.btn{border:0;border-radius:10px;padding:12px 16px;font-size:14px;font-weight:650;cursor:pointer;background:#eaf0f8;color:#254467}.btn.primary{background:#225cbd;color:white}.btn:hover{filter:brightness(.95)}.btn:disabled{opacity:.45;cursor:not-allowed}.buttons{display:flex;flex-wrap:wrap;gap:9px}.buttons .primary{flex:1}.note{color:#6a7c90;font-size:12px;line-height:1.65}.viewer{min-height:460px;display:flex;align-items:center;justify-content:center;background:#e9eef5;border:1px solid #dbe4ef;border-radius:12px;overflow:auto;position:relative}.viewer canvas{max-width:100%;height:auto;background:white;box-shadow:0 1px 8px #0002}.empty{text-align:center;color:#8592a3;padding:50px 12px}.empty .symbol{font-size:44px;margin-bottom:12px}.toolbar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}.toolbar select{max-width:100%;padding:9px;border:1px solid #cbd5e1;border-radius:8px;background:white}.status{font-size:13px;color:#47647d;margin:12px 0}.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:#5d6b7e;margin:14px 0}.dot{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin-right:5px}.progress{height:6px;background:#e5ebf3;border-radius:20px;overflow:hidden;margin:12px 0;display:none}.progress div{height:100%;background:#2563eb;width:0}.check{font-size:13px;color:#475569;display:flex;align-items:center;gap:8px}.help{font-size:12px;color:#69798c;line-height:1.6}.sep{height:1px;background:#e7edf4;margin:18px 0}@media(max-width:860px){.layout{grid-template-columns:1fr}.wrap{padding:18px 12px}header{align-items:flex-start}h1{font-size:23px}}
+
+/* V6: visible visual preset gallery */
+.preset-heading{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:14px;margin-bottom:12px}.preset-heading small{font-weight:400;color:#64748b;font-size:11px}.preset-gallery{display:grid;grid-template-columns:1fr;gap:9px}.preset-card{position:relative;display:flex;text-align:left;align-items:center;gap:12px;width:100%;border:1.5px solid #dfe6f0;border-radius:12px;background:#fff;padding:10px;cursor:pointer;font:inherit;color:#172438;transition:border-color .15s,background .15s}.preset-card:hover{border-color:#9bb9e4;background:#f9fbff}.preset-card.active{border-color:#2563eb;background:#f3f7ff;box-shadow:0 0 0 1px #2563eb20}.preset-art{width:92px;min-width:92px;height:82px;border-radius:10px;padding:9px;display:flex;flex-direction:column;justify-content:center}.preset-art svg{width:100%;height:53px}.preset-swatches{display:flex;gap:5px;justify-content:center}.preset-swatches i{display:block;width:30px;height:6px;border-radius:9px}.preset-copy{min-width:0;flex:1}.preset-name{font-size:13px;font-weight:750}.preset-purpose{font-size:11px;color:#64748b;margin:5px 0}.preset-desc{font-size:11px;line-height:1.5;color:#42536a}.preset-check{display:none;position:absolute;top:7px;right:9px;color:#2563eb;font-weight:800}.preset-card.active .preset-check{display:block}@media(min-width:861px) and (max-width:1160px){.preset-art{width:75px;min-width:75px}}
+
+/* V11 workspace: persistent canvas + compact, scrollable controls */
+.wrap{max-width:none;padding:12px 18px}.wrap header{margin-bottom:12px}.layout{grid-template-columns:minmax(290px,330px) minmax(0,1fr);gap:12px;align-items:start}
+aside{height:calc(100vh - 100px);overflow-y:auto;overscroll-behavior:contain;padding-right:5px;scrollbar-width:thin}
+main{min-width:0;position:sticky;top:10px;height:calc(100vh - 20px)}main>.panel{height:100%;display:flex;flex-direction:column;margin:0;padding:12px}
+main .viewer{flex:1;min-height:150px;overflow:auto;align-items:flex-start;justify-content:flex-start;scrollbar-width:thin}
+main .viewer canvas{display:block;margin:0;max-width:none;height:auto;user-select:none;-webkit-user-select:none}main .viewer.pan-ready{cursor:grab}main .viewer.pan-ready canvas{cursor:grab}main .viewer.panning,main .viewer.panning canvas{cursor:grabbing!important}main .viewer.panning{scroll-behavior:auto}main .viewer{touch-action:pan-x pan-y}
+.panel{padding:13px;margin-bottom:10px}.panel h2{margin-bottom:9px;font-size:14px}.field{margin:8px 0}.preset-gallery{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.preset-card{min-width:0;padding:7px!important;display:flex!important;flex-direction:column;gap:5px!important}.preset-art{width:100%!important;height:55px!important;min-width:0!important}.preset-art svg{height:32px!important}.preset-copy{min-width:0}.preset-desc{display:none}.preset-name{font-size:11px!important}.preset-purpose{font-size:10px!important}
+.upload{padding:10px 8px;margin:6px 0}.upload small{display:none}.note{font-size:11px}.btn{padding:8px 11px;font-size:12px}
+#previewControls{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:6px 0}#previewControls label{font-size:12px;color:#53657d}#previewControls select{max-width:135px}#previewControls .btn{padding:6px 9px}
+#liveState{font-size:11px;color:#58728f;margin-left:auto}.toolbar .sub{font-size:11px}.legend{margin-top:5px}
+@media(max-width:850px){.layout{grid-template-columns:1fr}aside{height:auto;overflow:visible}main{position:relative;height:75vh;top:auto}.wrap{padding:10px}.preset-gallery{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:560px){.preset-gallery{grid-template-columns:1fr 1fr}.preset-art{height:46px!important}main{height:65vh}}
+
+/* Detail export selection: drawing stays fully available for zoom/pan. */
+#viewer.selecting,#viewer.selecting canvas{cursor:crosshair!important}
+#detailRect{position:absolute;pointer-events:none;border:2px solid #f59e0b;background:#f59e0b26;box-shadow:0 0 0 1px #fff8;display:none;z-index:3}
+#detailHint{font-size:12px;color:#52657c;margin:7px 0}
+/* Precision Status: identical fixed-size labels, in toolbar rather than on drawing. */
+#versionBadge.precision-badge{width:112px;height:26px;flex:0 0 112px;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 9px;border:1px solid #d4dbe4;border-radius:4px;background:#f5f7f9;color:#344054;font:600 11px/1 Inter,'Segoe UI',Arial,sans-serif;letter-spacing:.025em;white-space:nowrap;box-shadow:none;user-select:none}
+#versionBadge .precision-dot{display:inline-block;width:7px;height:7px;flex:0 0 7px;border-radius:50%;background:#2670c4}
+#versionBadge.old .precision-dot{background:#b57932}
+#versionBadge .precision-copy{font-size:11px}
+
+/* V18 precise status badge alignment */
+#versionBadge.precision-badge{display:inline-flex;align-items:center;justify-content:center;gap:7px;width:118px;min-width:118px;max-width:118px;height:28px;flex:0 0 118px;padding:0;border-radius:4px;text-align:center;line-height:1;vertical-align:middle}
+#versionBadge .precision-dot{display:block;width:7px;height:7px;min-width:7px;flex:0 0 7px;margin:0;vertical-align:middle}
+#versionBadge .precision-copy{display:block;flex:0 0 auto;line-height:1;white-space:nowrap;font-size:11px;letter-spacing:0;font-weight:600}
+.site-preferences{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.site-preferences label{font-size:12px;color:var(--muted,#64748b)}.site-preferences select{font:500 12px Inter,'Segoe UI',Arial,sans-serif;padding:7px 8px;border-radius:7px;border:1px solid var(--border,#dbe4ef);background:var(--panel,#fff);color:var(--ink,#172438)}
+/* Dark UI only: never recolour the engineering drawing or PDF pixels */
+:root{--page:#f4f7fb;--panel:#fff;--ink:#172438;--muted:#64748b;--border:#dbe4ef;--soft:#f4f7fb;--button:#eaf0f8;--button-ink:#254467}
+html[data-theme="dark"]{--page:#141b26;--panel:#1e2938;--ink:#e5ebf4;--muted:#a3b2c7;--border:#38475c;--soft:#273448;--button:#34465e;--button-ink:#e7f0fc;color-scheme:dark}
+html[data-theme="dark"],html[data-theme="dark"] body{background:var(--page);color:var(--ink)}
+html[data-theme="dark"] .panel,html[data-theme="dark"] .preset-card,html[data-theme="dark"] .upload{background:var(--panel);border-color:var(--border);color:var(--ink);box-shadow:none}
+html[data-theme="dark"] .preset-card.active{background:#263a56;border-color:#5a94ee}
+html[data-theme="dark"] .preset-card:hover,html[data-theme="dark"] .upload:hover{background:#2b3b51}
+html[data-theme="dark"] .btn:not(.primary){background:var(--button);color:var(--button-ink)}
+html[data-theme="dark"] select,html[data-theme="dark"] input[type=number]{background:var(--soft);color:var(--ink);border-color:var(--border)}
+html[data-theme="dark"] .sub,html[data-theme="dark"] .help,html[data-theme="dark"] .note,html[data-theme="dark"] .check,html[data-theme="dark"] .legend,html[data-theme="dark"] .preset-purpose,html[data-theme="dark"] .preset-desc,html[data-theme="dark"] .fileinfo,html[data-theme="dark"] #detailHint,html[data-theme="dark"] #liveState,html[data-theme="dark"] #previewControls label{color:var(--muted)}
+html[data-theme="dark"] .sep{background:var(--border)}html[data-theme="dark"] .viewer{background:#263344;border-color:var(--border)}
+html[data-theme="dark"] .precision-badge{background:#2c394c!important;border-color:#526177!important;color:#edf2fa!important}
+html[data-theme="dark"] .tag{background:#293e58;color:#bed8fc}
+html[data-theme="dark"] .progress{background:#33445b}
+html[data-theme="dark"] .empty{color:#a4b2c6}
+html[data-theme="dark"] #inspectLabel,html[data-theme="dark"] .status{color:#b8c8dc!important}
+@media(max-width:720px){header{flex-wrap:wrap}.site-preferences{justify-content:flex-start}}
+
+/* V19 Focus Viewer: no page layout shift, preserve existing canvas zoom and pan. */
+main.v19-focus{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;max-height:none!important;z-index:9999!important;margin:0!important;padding:12px!important;box-sizing:border-box;background:var(--page,#f4f7fb);overflow:hidden!important}
+main.v19-focus>section.panel{height:100%!important;display:flex!important;flex-direction:column!important;overflow:hidden!important;box-sizing:border-box}
+main.v19-focus #viewer{flex:1 1 auto!important;min-height:90px!important;height:auto!important;max-height:none!important}
+main.v19-focus #previewControls{flex-shrink:0}
+main.v19-focus #detailHint,main.v19-focus .legend,main.v19-focus .note{display:none!important}
+#focusToggle{margin-left:3px;white-space:nowrap}
+#v19ExportStyle{max-width:155px!important}
+#v19ExportStyleLabel{font-size:12px}
+/* V19 version badge remains in toolbar and centered for both states */
+#versionBadge.precision-badge{box-sizing:border-box;min-width:118px!important;width:118px!important;max-width:118px!important;justify-content:center!important;align-items:center!important}
+#versionBadge .precision-copy{font-variant-numeric:tabular-nums}
+</style></head><body><div class="wrap"><header><div><h1>Drawing Overlay <span style="font-size:13px;color:#64748b;font-weight:500">V19</span></h1><div class="sub">工程圖新舊版本疊合比對 · Classic / Colour Blend / Change Highlight · PDF → PNG</div></div><div class="site-preferences"><label for="themeChoice" data-i18n="theme">主題</label><select id="themeChoice" aria-label="Theme"><option value="light">☀ Light</option><option value="dark">☾ Dark</option></select><label for="langChoice" data-i18n="language">語言</label><select id="langChoice" aria-label="Language"><option value="zh">繁體中文</option><option value="en">English</option></select><span class="tag">Local Processing · 本機處理</span></div></header><div class="layout"><aside><section class="panel"><h2>1 · 上傳圖面</h2><label class="upload" for="oldFiles"><b>📄 舊版 PDF</b><small>點擊選擇，可一次上傳多張</small><input id="oldFiles" type="file" accept="application/pdf,.pdf" multiple><div class="fileinfo" id="oldInfo">尚未選擇檔案</div></label><label class="upload" for="newFiles"><b>📄 新版 PDF</b><small>點擊選擇，可一次上傳多張</small><input id="newFiles" type="file" accept="application/pdf,.pdf" multiple><div class="fileinfo" id="newInfo">尚未選擇檔案</div></label><div class="note">依檔名末尾圖號自動配對，例如 2025-03191-31_1.pdf 與 2025-03191-31_2.pdf。也支援單份多頁 PDF。</div></section><section class="panel"><h2>2 · 疊圖模式與顏色</h2><div class="preset-heading">選擇工程疊圖風格 <small>點擊即可套用</small></div><div id="presetGallery" class="preset-gallery"><button type="button" class="preset-card active" data-preset="spotting" aria-pressed="true"><div class="preset-art" style="background:#f1f8fa"><div class="preset-swatches"><i style="background:#f04448"></i><i style="background:#00bfd3"></i></div><svg viewBox="0 0 140 70" aria-hidden="true"><g fill="none" stroke="#00bfd3" stroke-width="2.4" stroke-linejoin="round" opacity=".85"><path d="M9 56 L37 11 L113 11 L130 52 L9 56 M37 11 L48 54 M9 56 L113 11"/></g><g fill="none" stroke="#f04448" stroke-width="2.4" stroke-linejoin="round" opacity=".9"><path d="M13 53 L42 15 L116 15 L126 48 L13 53 M42 15 L52 50 M13 53 L116 15"/></g></svg></div><div class="preset-copy"><div class="preset-name">01 — Chromatic Shift</div><div class="preset-purpose">Revision Spotting</div><div class="preset-desc">紅青高對比，快速辨識管線與尺寸變更</div></div><span class="preset-check">✓</span></button><button type="button" class="preset-card" data-preset="focus" aria-pressed="false"><div class="preset-art" style="background:#faf8e9"><div class="preset-swatches"><i style="background:#242424"></i><i style="background:#e6b900"></i></div><svg viewBox="0 0 140 70" aria-hidden="true"><g fill="none" stroke="#e6b900" stroke-width="2.4" stroke-linejoin="round" opacity=".85"><path d="M9 56 L37 11 L113 11 L130 52 L9 56 M37 11 L48 54 M9 56 L113 11"/></g><g fill="none" stroke="#242424" stroke-width="2.4" stroke-linejoin="round" opacity=".9"><path d="M13 53 L42 15 L116 15 L126 48 L13 53 M42 15 L52 50 M13 53 L116 15"/></g></svg></div><div class="preset-copy"><div class="preset-name">02 — Amber Draft</div><div class="preset-purpose">Current Drawing Focus</div><div class="preset-desc">新版黑色優先，舊版琥珀黃作為參考</div></div><span class="preset-check">✓</span></button><button type="button" class="preset-card" data-preset="detailed" aria-pressed="false"><div class="preset-art" style="background:#f0f6fb"><div class="preset-swatches"><i style="background:#f4b000"></i><i style="background:#245a9a"></i></div><svg viewBox="0 0 140 70" aria-hidden="true"><g fill="none" stroke="#245a9a" stroke-width="2.4" stroke-linejoin="round" opacity=".85"><path d="M9 56 L37 11 L113 11 L130 52 L9 56 M37 11 L48 54 M9 56 L113 11"/></g><g fill="none" stroke="#f4b000" stroke-width="2.4" stroke-linejoin="round" opacity=".9"><path d="M13 53 L42 15 L116 15 L126 48 L13 53 M42 15 L52 50 M13 53 L116 15"/></g></svg></div><div class="preset-copy"><div class="preset-name">03 — Blueprint</div><div class="preset-purpose">Revision Highlight</div><div class="preset-desc">藍色舊版＋琥珀黃新版，讓更新線條亮起來</div></div><span class="preset-check">✓</span></button><button type="button" class="preset-card" data-preset="custom" aria-pressed="false"><div class="preset-art" style="background:#f7f3fb"><div class="preset-swatches"><i style="background:#ec78ac"></i><i style="background:#9877cf"></i></div><svg viewBox="0 0 140 70" aria-hidden="true"><g fill="none" stroke="#9877cf" stroke-width="2.4" stroke-linejoin="round" opacity=".85"><path d="M9 56 L37 11 L113 11 L130 52 L9 56 M37 11 L48 54 M9 56 L113 11"/></g><g fill="none" stroke="#ec78ac" stroke-width="2.4" stroke-linejoin="round" opacity=".9"><path d="M13 53 L42 15 L116 15 L126 48 L13 53 M42 15 L52 50 M13 53 L116 15"/></g></svg></div><div class="preset-copy"><div class="preset-name">04 — My Studio</div><div class="preset-purpose">Customized</div><div class="preset-desc">自行調整新舊顏色及透明度，儲存在本機</div></div><span class="preset-check">✓</span></button></div><input type="hidden" id="preset" value="spotting"><p class="help" id="presetHelp">紅青雙色錯位，快速辨識修訂位置。</p><div class="buttons"><button class="btn" id="savePreset" type="button">儲存我的設定（本機）</button></div><p class="help" id="saveStatus">目前可儲存在這個瀏覽器；註冊登入及跨裝置同步尚未實作。</p><div class="field"><label for="mode">疊圖方式</label><select id="mode"><option value="classic" selected>Classic · 透明疊圖（推薦）</option><option value="difference">Difference · 差異分類（黑白圖）</option><option value="original">Original Colour Blend · 保留原始彩色</option><option value="highlight">Difference Heatmap · 彩圖變更標示</option><option value="blink">Blink Compare · 新舊切換</option><option value="split">Split View · 左右並排</option></select></div><div class="field" id="colourOptions" style="display:none"><label for="sensitivity">差異敏感度</label><input id="sensitivity" type="range" min="10" max="120" value="45" step="5"><span id="sensitivityVal">45</span></div><div class="field" id="highlightOptions" style="display:none"><label for="highlightColor">差異標記</label><input type="color" id="highlightColor" value="#ffb900"></div><div class="field" id="cropOptions"><label><input id="useCrop" type="checkbox"> 排除圖框（只比較中央區域）</label><input id="cropMargin" type="number" min="0" max="35" value="8" style="width:52px"> <span style="font-size:12px">邊界 %</span></div><div class="field"><label for="layerOrder">圖層混色方式</label><select id="layerOrder" aria-label="Layer order"><option value="balanced">Balanced Blend · 對稱混色</option><option value="newTop">NEW on Top · 新版在上</option><option value="oldTop">OLD on Top · 舊版在上</option></select></div><p class="help" id="blendHelp">Balanced Blend 不受圖層上下順序影響；兩版交疊時會混色。</p><div class="field"><label for="newColor">新版（New）</label><input type="color" id="newColor" value="#f5222d"><label for="newOpacity">不透明度 <span id="newOpacityVal">75%</span></label><input type="range" id="newOpacity" min="0" max="100" value="75" step="5"></div><div class="field"><label for="oldColor">舊版（Old）</label><input type="color" id="oldColor" value="#00bcd4"><label for="oldOpacity">不透明度 <span id="oldOpacityVal">75%</span></label><input type="range" id="oldOpacity" min="0" max="100" value="75" step="5"></div><div class="buttons"><button class="btn" type="button" id="swapColors" title="互換新版與舊版的顏色（保留各自透明度）">⇄ 互換 NEW / OLD 顏色</button></div><div class="field" id="sameColorRow"><label for="sameColor">重合（Unchanged）</label><input type="color" id="sameColor" value="#202020"></div><div class="sep"></div><div class="field"><label for="resolution">輸出解析度</label><select id="resolution"><option value="2">中（約 2000px）</option><option value="3" selected>高（約 3000px）</option><option value="5">超高（約 5000px）</option></select></div><div class="field" id="toleranceRow"><label for="tolerance">線條容差 <span id="tolVal">1</span>px</label><input id="tolerance" type="range" min="0" max="4" value="1" step="1"></div><label class="check"><input id="autoAlign" type="checkbox" checked> 自動微調對齊（小幅平移）</label><p class="help">彩色圖建議先用 Blink Compare（按住 OLD 可快速對照）或 Split View；Difference Heatmap 只標示疑似像素差異。Classic 直接把兩張完整圖面以透明色彩疊合，不會將重合線條切碎；Difference 才會依像素分類重合區域。自動對齊以全頁影像估算，仍可手動修正。</p><div class="buttons"><button class="btn primary" id="generate">產生疊圖</button></div><div class="progress" id="progress"><div id="bar"></div></div><div class="status" id="status">等待上傳 PDF</div></section><section class="panel"><h2>3 · 對齊微調</h2><div class="field"><label for="dx">新版水平位移 X（px）</label><input id="dx" type="number" value="0" step="1"></div><div class="field"><label for="dy">新版垂直位移 Y（px）</label><input id="dy" type="number" value="0" step="1"></div><button class="btn" id="apply" disabled>套用位移及顏色</button><p class="help">正數往右／下移。位移以目前輸出 PNG 的像素為單位。調整後不需要重新上傳。</p></section></aside><main><section class="panel"><div class="toolbar"><div><h2 style="margin-bottom:4px">疊圖預覽</h2><span class="sub">黑白圖可用 Classic；彩圖建議 Blink Compare / Split View / Difference Heatmap</span></div><select id="sheetSelect" disabled><option>請先產生疊圖</option></select></div><div class="buttons" id="inspectToolbar" style="display:none;margin:8px 0"><button class="btn primary" id="holdOld" type="button" style="min-width:220px;touch-action:none">按住看 OLD · 放開回 NEW</button><span id="inspectLabel" style="font-size:12px;color:#64748b">也可按住 Space 空白鍵暫看舊版</span></div><div id="previewControls"><div id="versionBadge" class="precision-badge" aria-live="off" style="display:none"><span class="precision-dot"></span><span class="precision-copy">CURRENT</span></div><button class="btn" id="focusToggle" type="button" title="Full-screen viewer">⛶ 全螢幕</button><label for="previewQuality">即時預覽</label><select id="previewQuality"><option value="1000">快速 · 1000px</option><option value="1600" selected>清晰 · 1600px</option><option value="2400">細緻 · 2400px</option><option value="4000">超清晰 · 4000px</option><option value="99999">原始解析度（較慢）</option></select><button class="btn" id="autoBlink" type="button">▶ Auto Blink</button><select id="blinkSpeed" aria-label="Blink interval"><option value="350">0.35s</option><option value="600" selected>0.6s</option><option value="1000">1s</option></select><label id="v19ExportStyleLabel" for="v19ExportStyle">WebP 樣式</label><select id="v19ExportStyle"><option value="viewer">Viewer Frame</option><option value="clean">Clean Drawing</option></select><label for="webpResolution">WebP 畫質</label><select id="webpResolution" aria-label="Animated WebP export resolution"><option value="3200">標準 · 3200px</option><option value="4800" selected>高畫質 · 4800px</option><option value="6400">超高畫質 · 6400px</option><option value="original">原始圖面解析度</option></select><label class="check" style="white-space:nowrap"><input id="webpLabels" type="checkbox" checked> WebP 顯示 OLD / NEW 標籤</label><button class="btn" id="exportWebP" type="button" disabled>下載全圖 WebP</button><button class="btn" id="selectDetail" type="button">▱ 框選局部</button><button class="btn" id="exportDetail" type="button" disabled>下載局部 WebP</button><button class="btn" id="clearDetail" type="button" disabled>取消框選</button><button class="btn" id="zoomOut" type="button">－</button><span id="zoomLabel" style="font-size:12px;min-width:43px;text-align:center">Fit</span><button class="btn" id="zoomIn" type="button">＋</button><button class="btn" id="zoomFit" type="button">Fit</button><span id="liveState">放大後直接拖曳圖面平移 · Ctrl+滾輪縮放</span></div><div class="viewer" id="viewer"><div class="empty" id="empty"><div class="symbol">◫</div>上傳兩版 PDF，點擊「產生疊圖」</div><canvas id="output" style="display:none"></canvas><div id="detailRect"></div></div><div id="detailHint">全圖放大與手掌拖曳照常使用；需要局部動畫時，點「框選局部」再在圖面上拖曳範圍。</div><div class="legend"><span><i class="dot" id="legendNew" style="background:#f5222d"></i>新版</span><span><i class="dot" id="legendOld" style="background:#00bcd4"></i>舊版</span><span id="legendSameWrap"><i class="dot" id="legendSame" style="background:#202020"></i>重合</span></div><div class="buttons"><button class="btn primary" id="download" disabled>下載目前 PNG</button><button class="btn" id="downloadAll" disabled>下載全部 ZIP</button></div><p class="note">重要：本工具使用像素疊圖，適合快速找出候選差異，不能單憑顏色判定工程變更。需檢查文字、尺寸、線寬及圖面對齊。PDF 不會上傳至網站伺服器；首次開啟需網路載入 PDF 處理程式。</p></section></main></div></div><script type="module">
+import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs';
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
+const $=id=>document.getElementById(id), state={sheets:[],current:0,blinkSide:'new'};
+function status(s){$('status').textContent=s}function progress(v){$('progress').style.display=v===null?'none':'block';if(v!==null)$('bar').style.width=v+'%'}
+function rgb(hex){return [1,3,5].map(i=>parseInt(hex.slice(i,i+2),16))}
+function key(name){let s=name.replace(/\.pdf$/i,'').replace(/(?:[_\s-](?:old|new|rev\d+|revision\d+|v\d+|\d+))$/i,'');let m=s.match(/(?:^|[-_])(\d{2,4})$/);return m?m[1]:s.toLowerCase()}
+function fileSummary(files){return [...files].map(f=>f.name).join(' · ')||'尚未選擇檔案'}
+for(let type of ['old','new'])$(type+'Files').addEventListener('change',e=>{$(type+'Info').textContent=fileSummary(e.target.files)});
+$('tolerance').addEventListener('input',()=>{$('tolVal').textContent=$('tolerance').value});
+for(let name of ['new','old','same'])$(name+'Color').addEventListener('input',()=>{$('legend'+name[0].toUpperCase()+name.slice(1)).style.background=$(name+'Color').value;if(typeof markCustom==='function')markCustom()});
+async function renderPages(files,scale){let results=[];for(const file of files){const bytes=new Uint8Array(await file.arrayBuffer());const pdf=await pdfjsLib.getDocument({data:bytes}).promise;for(let i=1;i<=pdf.numPages;i++){const page=await pdf.getPage(i),vp=page.getViewport({scale}),c=document.createElement('canvas');c.width=Math.ceil(vp.width);c.height=Math.ceil(vp.height);await page.render({canvasContext:c.getContext('2d',{willReadFrequently:true}),viewport:vp}).promise;results.push({name:file.name,page:i,key:key(file.name)+(pdf.numPages>1?':'+i:''),canvas:c})}}return results}
+function grayMask(c,w,h){const temp=document.createElement('canvas');temp.width=w;temp.height=h;const cx=temp.getContext('2d',{willReadFrequently:true});cx.fillStyle='#fff';cx.fillRect(0,0,w,h);cx.drawImage(c,0,0,w,h);const d=cx.getImageData(0,0,w,h).data,mask=new Uint8Array(w*h);for(let i=0,j=0;i<d.length;i+=4,j++)mask[j]=Math.min(255,Math.round(255-(.2126*d[i]+.7152*d[i+1]+.0722*d[i+2])));return mask}
+function autoOffset(a,b,w,h){const step=Math.max(3,Math.round(w/480)),limit=Math.min(12,Math.round(w/180)),sample=[];for(let y=Math.round(h*.07);y<h*.93;y+=step)for(let x=Math.round(w*.07);x<w*.93;x+=step){let i=y*w+x;if(a[i]>160)sample.push([x,y])}if(sample.length>35000)sample.splice(35000);let best=[0,0],score=-Infinity;for(let dy=-limit;dy<=limit;dy+=2)for(let dx=-limit;dx<=limit;dx+=2){let hit=0;for(const [x,y] of sample){const xx=x+dx,yy=y+dy;if(xx>=0&&yy>=0&&xx<w&&yy<h&&b[yy*w+xx]>100)hit++}if(hit>score){score=hit;best=[dx,dy]}}return best}
+function dilate(mask,w,h,r){if(r<=0)return mask;const out=new Uint8Array(mask.length);for(let y=0;y<h;y++)for(let x=0;x<w;x++){let found=false;for(let yy=Math.max(0,y-r);yy<=Math.min(h-1,y+r)&&!found;yy++)for(let xx=Math.max(0,x-r);xx<=Math.min(w-1,x+r);xx++)if(mask[yy*w+xx]>70){found=true;break}out[y*w+x]=found?255:0}return out}
+function compositeDifference(sheet,dx,dy){const {oldMask,newMask,w,h}=sheet;const tol=+$('tolerance').value;const a=tol?dilate(oldMask,w,h,tol):oldMask,b=tol?dilate(newMask,w,h,tol):newMask;const oc=rgb($('oldColor').value),nc=rgb($('newColor').value),sc=rgb($('sameColor').value);const cv=$('output');cv.width=w;cv.height=h;const cx=cv.getContext('2d',{willReadFrequently:true});const im=cx.createImageData(w,h),d=im.data;for(let y=0;y<h;y++){for(let x=0;x<w;x++){const i=y*w+x,j=i*4,xx=x-dx,yy=y-dy;const ov=oldMask[i],nv=xx>=0&&yy>=0&&xx<w&&yy<h?newMask[yy*w+xx]:0;const o=ov>55,n=nv>55;const om=o&&xx>=0&&yy>=0&&xx<w&&yy<h&&b[yy*w+xx]>70;const nm=n&&a[i]>70;let c,alpha;if(om&&nm){c=sc;alpha=Math.max(ov,nv)/255}else if(o&&!om){c=oc;alpha=ov/255}else if(n&&!nm){c=nc;alpha=nv/255}else if(o||n){c=sc;alpha=Math.max(ov,nv)/255}else{c=[255,255,255];alpha=0}d[j]=Math.round(255+(c[0]-255)*alpha);d[j+1]=Math.round(255+(c[1]-255)*alpha);d[j+2]=Math.round(255+(c[2]-255)*alpha);d[j+3]=255}}cx.putImageData(im,0,0);cv.style.display='block';$('empty').style.display='none';$('download').disabled=false;$('downloadAll').disabled=false;$('apply').disabled=false}
+function compositeClassic(sheet,dx,dy){
+ const {oldMask,newMask,w,h}=sheet,oc=rgb($('oldColor').value),nc=rgb($('newColor').value);
+ const oldOpacity=+$('oldOpacity').value/100,newOpacity=+$('newOpacity').value/100,cv=$('output');cv.width=w;cv.height=h;
+ const cx=cv.getContext('2d',{willReadFrequently:true}),im=cx.createImageData(w,h),d=im.data;
+ // Preserve full original antialiased strokes: no thresholding, erosion, or difference masks.
+ // Composite both colored ink layers over white; selectable order or symmetric blending.
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+   const i=y*w+x,j=i*4,xx=x-dx,yy=y-dy;
+   const aOld=(oldMask[i]/255)*oldOpacity;
+   const aNew=xx>=0&&yy>=0&&xx<w&&yy<h?(newMask[yy*w+xx]/255)*newOpacity:0;
+   const order=$('layerOrder').value;
+   for(let k=0;k<3;k++){
+     if(order==='oldTop'){
+       const afterNew=255*(1-aNew)+nc[k]*aNew;
+       d[j+k]=Math.round(afterNew*(1-aOld)+oc[k]*aOld);
+     }else if(order==='balanced'){
+       // Order-independent weighted ink mixture. Preserve the union opacity
+       // while giving both drawings symmetric influence at intersections.
+       const coverage=1-(1-aOld)*(1-aNew);
+       const weight=aOld+aNew;
+       const ink=weight>0?(oc[k]*aOld+nc[k]*aNew)/weight:255;
+       d[j+k]=Math.round(255*(1-coverage)+ink*coverage);
+     }else{
+       const afterOld=255*(1-aOld)+oc[k]*aOld;
+       d[j+k]=Math.round(afterOld*(1-aNew)+nc[k]*aNew);
+     }
+   }
+   d[j+3]=255;
+ }
+ cx.putImageData(im,0,0);cv.style.display='block';$('empty').style.display='none';
+ $('download').disabled=false;$('downloadAll').disabled=false;$('apply').disabled=false;
+}
+
+function getRGBA(canvas,w,h){
+ const c=document.createElement('canvas');c.width=w;c.height=h;
+ const ctx=c.getContext('2d',{willReadFrequently:true});
+ ctx.fillStyle='white';ctx.fillRect(0,0,w,h);ctx.drawImage(canvas,0,0,w,h);
+ return ctx.getImageData(0,0,w,h).data;
+}
+function compositeColour(sheet,dx,dy){
+ const {w,h}=sheet,cv=$('output'),mode=$('mode').value;
+ cv.width=w;cv.height=h;
+ const ctx=cv.getContext('2d',{willReadFrequently:true});
+ const out=ctx.createImageData(w,h),d=out.data;
+ const old=getRGBA(sheet.oldCanvas,w,h),newer=getRGBA(sheet.newCanvas,w,h);
+ const ao=+$('oldOpacity').value/100,an=+$('newOpacity').value/100;
+ const order=$('layerOrder').value,threshold=+$('sensitivity').value;
+ const hl=rgb($('highlightColor').value),crop=$('useCrop').checked;
+ const margin=+$('cropMargin').value/100;
+ // Source-over blend on white, or colour-preserving change highlighting.
+ // Nearest pixel matching; manual/auto alignment applies to the new drawing.
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+   const i=(y*w+x)*4,xx=x-dx,yy=y-dy;
+   const valid=xx>=0&&yy>=0&&xx<w&&yy<h;
+   const ni=valid?(yy*w+xx)*4:-1;
+   const inside=!crop||(x>=w*margin&&x<w*(1-margin)&&y>=h*margin&&y<h*(1-margin));
+   const changed=valid&&inside&&Math.sqrt(
+     ((old[i]-newer[ni])**2+(old[i+1]-newer[ni+1])**2+(old[i+2]-newer[ni+2])**2)/3
+   )>threshold;
+   for(let k=0;k<3;k++){
+     const o=old[i+k],n=valid?newer[ni+k]:255;
+     if(mode==='highlight'){
+       // Keep original new drawing; highlight changed pixels only.
+       d[i+k]=changed?Math.round(n*.28+hl[k]*.72):n;
+     }else if(order==='balanced'){
+       d[i+k]=Math.round(255*(1-ao)*(1-an)+o*ao*(1-an)+n*an*(1-ao)+(o+n)*.5*ao*an);
+     }else if(order==='oldTop'){
+       d[i+k]=Math.round((255*(1-an)+n*an)*(1-ao)+o*ao);
+     }else{
+       d[i+k]=Math.round((255*(1-ao)+o*ao)*(1-an)+n*an);
+     }
+   }
+   d[i+3]=255;
+ }
+ ctx.putImageData(out,0,0);
+ cv.style.display='block';$('empty').style.display='none';
+ $('download').disabled=false;$('downloadAll').disabled=false;$('apply').disabled=false;
+}
+function compositeInspection(sheet,dx,dy){
+ const {w,h}=sheet,mode=$('mode').value,cv=$('output');
+ const old=sheet.oldCanvas,newer=sheet.newCanvas;
+ cv.width=mode==='split'?w*2:w;cv.height=h;
+ const ctx=cv.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,cv.width,cv.height);
+ if(mode==='split'){
+  ctx.drawImage(old,0,0,w,h);
+  ctx.drawImage(newer,w+dx,dy,w,h);
+  ctx.fillStyle='#ffffff';ctx.fillRect(w-2,0,4,h);
+  ctx.fillStyle='#111827';ctx.font=`bold ${Math.max(18,Math.round(w/100))}px sans-serif`;
+  ctx.fillText('OLD',24,Math.max(38,h/25));ctx.fillText('NEW',w+24,Math.max(38,h/25));
+ }else if(state.blinkSide==='old')ctx.drawImage(old,0,0,w,h);
+ else ctx.drawImage(newer,dx,dy,w,h);
+ cv.style.display='block';$('empty').style.display='none';
+ $('download').disabled=false;$('downloadAll').disabled=false;$('apply').disabled=false;
+}
+function composite(sheet,dx,dy){
+ const mode=$('mode').value;
+ if(mode==='classic')compositeClassic(sheet,dx,dy);
+ else if(mode==='difference')compositeDifference(sheet,dx,dy);
+ else if(mode==='blink'||mode==='split')compositeInspection(sheet,dx,dy);
+ else compositeColour(sheet,dx,dy);
+}
+function updateMode(){setTimeout(updateVersionBadge,0);
+ const mode=$('mode').value,classic=mode==='classic',diff=mode==='difference',colour=mode==='original'||mode==='highlight'||mode==='blink'||mode==='split';
+ $('newOpacity').disabled=diff||mode==='highlight';
+ $('oldOpacity').disabled=diff||mode==='highlight';
+ $('sameColorRow').style.display=diff?'flex':'none';
+ $('toleranceRow').style.display=diff?'flex':'none';
+ $('legendSameWrap').style.display=diff?'inline':'none';
+ $('colourOptions').style.display=mode==='highlight'?'flex':'none';
+ $('highlightOptions').style.display=mode==='highlight'?'flex':'none';
+ $('cropOptions').style.display=mode==='highlight'?'flex':'none';
+ $('inspectToolbar').style.display=mode==='blink'?'flex':'none';
+ $('holdOld').textContent=state.blinkSide==='old'?'顯示 OLD · 放開回 NEW':'按住看 OLD · 放開回 NEW';
+ if(state.sheets.length)schedulePreview();
+}
+$('mode').addEventListener('change',updateMode);
+function updateVersionBadge(){const b=$('versionBadge');if(!b)return;const blink=$('mode').value==='blink';b.style.display=blink&&state.sheets.length?'inline-flex':'none';b.querySelector('.precision-copy').textContent=state.blinkSide==='old'?'PREVIOUS':'CURRENT';b.classList.toggle('old',state.blinkSide==='old')}
+function setBlinkSide(side){
+ if(state.blinkSide===side)return;
+ state.blinkSide=side;updateVersionBadge();
+ $('holdOld').textContent=side==='old'?'顯示 OLD · 放開回 NEW':'按住看 OLD · 放開回 NEW';
+ if(state.sheets.length){
+  if($('mode').value==='blink')fastBlinkDraw();else schedulePreview();
+ }
+}
+const hold=$('holdOld');
+hold.addEventListener('pointerdown',e=>{e.preventDefault();stopBlink();hold.setPointerCapture(e.pointerId);setBlinkSide('old')});
+for(const ev of ['pointerup','pointercancel','lostpointercapture'])hold.addEventListener(ev,()=>setBlinkSide('new'));
+document.addEventListener('keydown',e=>{if(e.code==='Space'&&!e.repeat&&!['INPUT','TEXTAREA','SELECT','BUTTON'].includes(document.activeElement?.tagName)&&$('mode').value==='blink'){e.preventDefault();stopBlink();setBlinkSide('old')}});
+document.addEventListener('keyup',e=>{if(e.code==='Space'&&$('mode').value==='blink'){e.preventDefault();setBlinkSide('new')}});
+window.addEventListener('blur',()=>setBlinkSide('new'));
+
+for(const id of ['sensitivity','highlightColor','useCrop','cropMargin']){
+ $(id).addEventListener('input',()=>{
+  $('sensitivityVal').textContent=$('sensitivity').value;
+  if(state.sheets.length)schedulePreview();
+ });
+}
+const PRESETS={
+ spotting:{layerOrder:'balanced',mode:'classic',newColor:'#f04448',oldColor:'#00bfd3',newOpacity:90,oldOpacity:90,description:'紅青雙色錯位，快速辨識修訂位置。'},
+ detailed:{mode:'classic',layerOrder:'newTop',newColor:'#f4b000',oldColor:'#245a9a',newOpacity:100,oldOpacity:55,description:'藍晒舊版作為參考，琥珀黃色新版在上層，凸顯更新線條。'},
+ focus:{layerOrder:'newTop',mode:'classic',newColor:'#242424',oldColor:'#e6b900',newOpacity:100,oldOpacity:55,description:'新版黑色優先，舊版琥珀黃色作為位置參考。'}
+};
+const CUSTOM_KEY='drawing-overlay-v5-custom-preset'; // preserve V5 saved preferences
+function capturePreset(){return Object.fromEntries(['mode','layerOrder','newColor','oldColor','newOpacity','oldOpacity','sameColor','tolerance','resolution','autoAlign','sensitivity','highlightColor','useCrop','cropMargin'].map(id=>[id,(id==='autoAlign'||id==='useCrop')?$(id).checked:$(id).value]))}
+function loadCustom(){try{return JSON.parse(localStorage.getItem(CUSTOM_KEY)||'null')}catch{return null}}
+function setPresetValues(p){for(const [id,value] of Object.entries(p)){const el=$(id);if(el){if(id==='autoAlign'||id==='useCrop')el.checked=!!value;else el.value=value}}for(const side of ['new','old'])$(side+'OpacityVal').textContent=$(side+'Opacity').value+'%';updateMode();if(state.sheets.length)schedulePreview()}
+function refreshPresetGallery(){document.querySelectorAll('.preset-card').forEach(card=>{const active=card.dataset.preset===$('preset').value;card.classList.toggle('active',active);card.setAttribute('aria-pressed',String(active))})}
+function selectPreset(){const key=$('preset').value;if(key==='custom'){const saved=loadCustom();if(saved){setPresetValues({layerOrder:'balanced',...saved});$('presetHelp').textContent='已載入此瀏覽器儲存的個人設定。'}else $('presetHelp').textContent='自訂顏色、透明度與模式，按「儲存我的設定」即可在此瀏覽器記住。';}else{setPresetValues(PRESETS[key]);$('presetHelp').textContent=PRESETS[key].description}refreshPresetGallery()}
+document.querySelectorAll('.preset-card').forEach(card=>card.addEventListener('click',()=>{$('preset').value=card.dataset.preset;selectPreset()}));
+$('layerOrder').addEventListener('change',()=>{$('blendHelp').textContent=({balanced:'Balanced Blend：對稱混色，沒有固定上層。',newTop:'NEW on Top：新版最後繪製，重合處優先顯示新版。',oldTop:'OLD on Top：舊版最後繪製，重合處優先顯示舊版。'})[$('layerOrder').value];});
+$('swapColors').addEventListener('click',()=>{const a=$('newColor').value;$('newColor').value=$('oldColor').value;$('oldColor').value=a;markCustom();if(state.sheets.length)schedulePreview();else {$('legendNew').style.background=$('newColor').value;$('legendOld').style.background=$('oldColor').value;}});
+$('savePreset').addEventListener('click',()=>{try{localStorage.setItem(CUSTOM_KEY,JSON.stringify(capturePreset()));$('preset').value='custom';$('presetHelp').textContent='已儲存個人設定。';refreshPresetGallery();$('saveStatus').textContent='已儲存在這個瀏覽器。尚未提供註冊帳號及跨裝置同步。'}catch(e){$('saveStatus').textContent='儲存失敗：'+e.message}});
+function markCustom(){if($('preset').value!=='custom'){$('preset').value='custom';$('presetHelp').textContent='目前已修改預設；按「儲存我的設定」即可記住。';refreshPresetGallery()}}
+for(const id of ['mode','layerOrder','newColor','oldColor','newOpacity','oldOpacity','sameColor','tolerance','resolution','autoAlign','sensitivity','highlightColor','useCrop','cropMargin'])$(id).addEventListener('change',markCustom);
+selectPreset();
+
+for(const side of ['new','old']){const el=$(side+'Opacity');el.addEventListener('input',()=>{$(side+'OpacityVal').textContent=el.value+'%';markCustom();if(state.sheets.length)schedulePreview()})}
+for(const id of ['layerOrder','newColor','oldColor','sameColor','tolerance'])$(id).addEventListener('change',()=>{if(state.sheets.length)schedulePreview()});
+updateMode();
+function previewSheet(s){
+ const target=+$('previewQuality').value,ratio=Math.min(1,target/Math.max(s.w,s.h));
+ if(ratio===1)return {sheet:s,ratio:1};
+ const w=Math.max(1,Math.round(s.w*ratio)),h=Math.max(1,Math.round(s.h*ratio));
+ if(s._preview?.w===w&&s._preview?.h===h)return {sheet:s._preview,ratio};
+ function shrink(src){const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(src,0,0,w,h);return c}
+ function shrinkMask(mask,source){return grayMask(shrink(source),w,h)}
+ s._preview={w,h,oldCanvas:shrink(s.oldCanvas),newCanvas:shrink(s.newCanvas),oldMask:shrinkMask(s.oldMask,s.oldCanvas),newMask:shrinkMask(s.newMask,s.newCanvas)};
+ return {sheet:s._preview,ratio};
+}
+let pendingFrame=0;
+function schedulePreview(){if(pendingFrame)cancelAnimationFrame(pendingFrame);pendingFrame=requestAnimationFrame(()=>{pendingFrame=0;if(state.sheets.length)drawPreview()})}
+let zoom=0; // 0 = fit, otherwise multiplier relative to canvas natural pixels
+function updateZoom(){
+ const cv=$('output'),viewer=$('viewer');
+ if(!cv.width)return;
+ const fit=Math.min(1,(viewer.clientWidth-20)/cv.width,(viewer.clientHeight-20)/cv.height);
+ const factor=zoom||fit;
+ cv.style.maxWidth='none';cv.style.width=Math.max(1,Math.round(cv.width*factor))+'px';cv.style.height='auto';
+ cv.style.margin='0';
+ $('zoomLabel').textContent=zoom?Math.round(zoom*100)+'%':'Fit';refreshPanCursor();if(typeof updateDetailRect==='function')updateDetailRect();
+}
+function fastBlinkDraw(){
+ updateVersionBadge();
+ const s=state.sheets[state.current];if(!s)return;
+ const {sheet,ratio}=previewSheet(s),cv=$('output');
+ if(cv.width!==sheet.w||cv.height!==sheet.h){cv.width=sheet.w;cv.height=sheet.h}
+ const ctx=cv.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,sheet.w,sheet.h);
+ if(state.blinkSide==='old')ctx.drawImage(sheet.oldCanvas,0,0,sheet.w,sheet.h);
+ else ctx.drawImage(sheet.newCanvas,Math.round(s.dx*ratio),Math.round(s.dy*ratio),sheet.w,sheet.h);
+ cv.style.display='block';$('empty').style.display='none';
+ $('download').disabled=false;$('downloadAll').disabled=false;$('apply').disabled=false;
+ updateZoom();
+}
+function drawPreview(){updateVersionBadge();const s=state.sheets[state.current],{sheet,ratio}=previewSheet(s);$('liveState').textContent='預覽 '+sheet.w+' × '+sheet.h+' · 匯出 '+s.w+' × '+s.h;if($('mode').value==='blink')fastBlinkDraw();else{composite(sheet,Math.round(s.dx*ratio),Math.round(s.dy*ratio));updateZoom()}if(detailRegion)updateDetailRect()}
+$('zoomIn').addEventListener('click',()=>{const cv=$('output');if(!cv.width)return;const fit=Math.min(1,($('viewer').clientWidth-20)/cv.width,($('viewer').clientHeight-20)/cv.height);zoom=Math.min(6,(zoom||fit)*1.6);updateZoom()});
+$('zoomOut').addEventListener('click',()=>{const cv=$('output');if(!cv.width)return;const fit=Math.min(1,($('viewer').clientWidth-20)/cv.width,($('viewer').clientHeight-20)/cv.height);zoom=Math.max(.1,(zoom||fit)/1.6);updateZoom()});
+$('zoomFit').addEventListener('click',()=>{zoom=0;updateZoom()});
+// Hand tool: drag the drawing directly to pan; no tool selection needed.
+const panViewer=$('viewer');let panState=null;
+function refreshPanCursor(){const c=$('output');panViewer.classList.toggle('pan-ready',c.style.display!=='none'&&(c.getBoundingClientRect().width>panViewer.clientWidth+2||c.getBoundingClientRect().height>panViewer.clientHeight+2))}
+panViewer.addEventListener('pointerdown',e=>{
+ if(detailSelectMode||e.button!==0||e.target!==$('output'))return;
+ refreshPanCursor();if(!panViewer.classList.contains('pan-ready'))return;
+ e.preventDefault();panState={id:e.pointerId,x:e.clientX,y:e.clientY,left:panViewer.scrollLeft,top:panViewer.scrollTop};
+ panViewer.setPointerCapture(e.pointerId);panViewer.classList.add('panning');
+});
+panViewer.addEventListener('pointermove',e=>{
+ if(!panState||panState.id!==e.pointerId)return;
+ e.preventDefault();panViewer.scrollLeft=panState.left-(e.clientX-panState.x);panViewer.scrollTop=panState.top-(e.clientY-panState.y);
+});
+function endPan(e){if(!panState||panState.id!==e.pointerId)return;panState=null;panViewer.classList.remove('panning');}
+panViewer.addEventListener('pointerup',endPan);panViewer.addEventListener('pointercancel',endPan);panViewer.addEventListener('lostpointercapture',endPan);
+new ResizeObserver(refreshPanCursor).observe(panViewer);
+$('viewer').addEventListener('wheel',e=>{
+ if(!e.ctrlKey)return;
+ e.preventDefault();const viewer=$('viewer'),cv=$('output');if(!cv.width)return;
+ const rect=viewer.getBoundingClientRect(),px=e.clientX-rect.left,py=e.clientY-rect.top;
+ const oldW=cv.getBoundingClientRect().width,oldH=cv.getBoundingClientRect().height;
+ const oldLeft=viewer.scrollLeft,oldTop=viewer.scrollTop;
+ const fx=(oldLeft+px)/Math.max(1,oldW),fy=(oldTop+py)/Math.max(1,oldH);
+ const fit=Math.min(1,(viewer.clientWidth-20)/cv.width,(viewer.clientHeight-20)/cv.height);
+ zoom=Math.max(.1,Math.min(6,(zoom||fit)*(e.deltaY<0?1.2:1/1.2)));
+ updateZoom();viewer.scrollLeft=fx*cv.getBoundingClientRect().width-px;viewer.scrollTop=fy*cv.getBoundingClientRect().height-py;
+},{passive:false});
+
+// Selection is stored in normalized source-image coordinates, so zooming and preview
+// resolution changes do not alter the exported area.
+let detailSelectMode=false,detailRegion=null,detailDrag=null;
+const detailRect=$('detailRect');
+function detailCoords(e){
+ const r=$('output').getBoundingClientRect();
+ return {x:Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),y:Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))};
+}
+function updateDetailRect(){
+ if(!detailRegion||!state.sheets.length){detailRect.style.display='none';return}
+ const cv=$('output');const w=cv.getBoundingClientRect().width,h=cv.getBoundingClientRect().height;
+ const v=$('viewer');
+ detailRect.style.left=(cv.offsetLeft+detailRegion.x*w)+'px';
+ detailRect.style.top=(cv.offsetTop+detailRegion.y*h)+'px';
+ detailRect.style.width=(detailRegion.w*w)+'px';detailRect.style.height=(detailRegion.h*h)+'px';
+ detailRect.style.display='block';
+}
+function clearDetail(){detailRegion=null;detailDrag=null;detailSelectMode=false;$('viewer').classList.remove('selecting');$('selectDetail').textContent='▱ 框選局部';$('exportDetail').disabled=true;$('clearDetail').disabled=true;updateDetailRect();}
+$('selectDetail').addEventListener('click',()=>{
+ if(!state.sheets.length){status('請先產生圖面');return}
+ detailSelectMode=!detailSelectMode;
+ $('viewer').classList.toggle('selecting',detailSelectMode);
+ $('selectDetail').textContent=detailSelectMode?'完成框選後自動返回手掌':'▱ 框選局部';
+ $('detailHint').textContent=detailSelectMode?'在工程圖上按住左鍵拖曳框選；完成後自動返回手掌工具。':'全圖縮放及手掌拖曳仍可使用；局部範圍以橘色框標示。';
+});
+$('clearDetail').addEventListener('click',clearDetail);
+$('viewer').addEventListener('pointerdown',e=>{
+ if(!detailSelectMode||e.button!==0||e.target!==$('output'))return;
+ e.preventDefault();e.stopImmediatePropagation();const p=detailCoords(e);
+ detailDrag={id:e.pointerId,start:p};detailRegion={x:p.x,y:p.y,w:0,h:0};
+ $('viewer').setPointerCapture(e.pointerId);updateDetailRect();
+},true);
+$('viewer').addEventListener('pointermove',e=>{
+ if(!detailDrag||e.pointerId!==detailDrag.id)return;
+ const p=detailCoords(e),a=detailDrag.start;
+ detailRegion={x:Math.min(a.x,p.x),y:Math.min(a.y,p.y),w:Math.abs(a.x-p.x),h:Math.abs(a.y-p.y)};
+ updateDetailRect();
+},true);
+$('viewer').addEventListener('pointerup',e=>{
+ if(!detailDrag||e.pointerId!==detailDrag.id)return;
+ detailDrag=null;detailSelectMode=false;$('viewer').classList.remove('selecting');
+ $('selectDetail').textContent='▱ 重新框選';
+ const valid=detailRegion.w>.005&&detailRegion.h>.005;
+ if(!valid){detailRegion=null;status('框選範圍太小，請重試')}
+ $('exportDetail').disabled=!valid;$('clearDetail').disabled=!valid;
+ if(valid){const sh=state.sheets[state.current];$('detailHint').textContent='已框選 '+Math.round(detailRegion.w*sh.w)+' × '+Math.round(detailRegion.h*sh.h)+' px；可繼續縮放、拖曳或下載局部動畫。'}
+ updateDetailRect();
+},true);
+
+function show(i){if(i!==state.current)clearDetail();state.current=i;const s=state.sheets[i];$('dx').value=s.dx;$('dy').value=s.dy;schedulePreview();status('顯示 '+s.label+' · '+s.w+' × '+s.h+' px')}
+async function exportFullBlob(){if(pendingFrame){cancelAnimationFrame(pendingFrame);pendingFrame=0}const s=state.sheets[state.current];composite(s,s.dx,s.dy);const blob=await canvasBlob();schedulePreview();return blob}
+$('previewQuality').addEventListener('change',schedulePreview);
+
+$('apply').addEventListener('click',()=>{if(!state.sheets.length)return;const s=state.sheets[state.current];s.dx=+$('dx').value||0;s.dy=+$('dy').value||0;show(state.current)});
+$('sheetSelect').addEventListener('change',e=>show(+e.target.value));
+$('generate').addEventListener('click',async()=>{const oldFiles=[...$('oldFiles').files],newFiles=[...$('newFiles').files];if(!oldFiles.length||!newFiles.length){status('請先上傳新舊兩版 PDF');return}try{$('generate').disabled=true;progress(5);status('正在讀取 PDF…');const scale=+$('resolution').value;const old=await renderPages(oldFiles,scale);progress(25);const newer=await renderPages(newFiles,scale);progress(50);const pairs=[];const used=new Set();for(const o of old){let j=newer.findIndex((n,k)=>!used.has(k)&&n.key===o.key);if(j<0&&old.length===1&&newer.length===1)j=0;if(j<0&&old.length===newer.length)j=old.indexOf(o);if(j>=0&&!used.has(j)){used.add(j);pairs.push([o,newer[j]])}}if(!pairs.length)throw Error('無法自動配對圖號，請檢查檔名；單張 PDF 可直接配對。');state.sheets=[];for(let i=0;i<pairs.length;i++){const [o,n]=pairs[i],w=o.canvas.width,h=o.canvas.height;const oldMask=grayMask(o.canvas,w,h),newMask=grayMask(n.canvas,w,h);const [dx,dy]=$('autoAlign').checked?autoOffset(oldMask,newMask,w,h):[0,0];state.sheets.push({label:o.key+' · Sheet '+(i+1),w,h,oldMask,newMask,oldCanvas:o.canvas,newCanvas:n.canvas,dx:-dx,dy:-dy});progress(50+40*(i+1)/pairs.length)}const select=$('sheetSelect');select.innerHTML='';state.sheets.forEach((s,i)=>{const opt=document.createElement('option');opt.value=i;opt.textContent=s.label;select.append(opt)});select.disabled=false;show(0);progress(null)}catch(e){status('錯誤：'+e.message);progress(null);console.error(e)}finally{$('generate').disabled=false}});
+function canvasBlob(){return new Promise(resolve=>$('output').toBlob(resolve,'image/png'))}
+function saveBlob(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500)}
+$('download').addEventListener('click',async()=>{if(!state.sheets.length)return;saveBlob(await exportFullBlob(),'overlay_'+state.sheets[state.current].label.replace(/[^a-zA-Z0-9_-]/g,'_')+'.png')});
+$('downloadAll').addEventListener('click',async()=>{if(!state.sheets.length)return;try{$('downloadAll').disabled=true;status('正在打包 ZIP…');const JSZip=(await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm')).default;const zip=new JSZip(),prev=state.current;for(let i=0;i<state.sheets.length;i++){show(i);const blob=await exportFullBlob();zip.file('overlay_'+state.sheets[i].label.replace(/[^a-zA-Z0-9_-]/g,'_')+'.png',blob)}const result=await zip.generateAsync({type:'blob',compression:'STORE'});saveBlob(result,'drawing_overlays.zip');show(prev);status('ZIP 下載完成')}catch(e){status('ZIP 失敗：'+e.message)}finally{$('downloadAll').disabled=false}});
+
+let blinkTimer=null;
+function stopBlink(){if(blinkTimer){clearInterval(blinkTimer);blinkTimer=null}$('autoBlink').textContent='▶ Auto Blink'}
+$('autoBlink').addEventListener('click',()=>{
+ if(blinkTimer){stopBlink();return}
+ if(!state.sheets.length){status('請先產生圖面');return}
+ if($('mode').value!=='blink'){$('mode').value='blink';updateMode()}
+ $('autoBlink').textContent='■ Pause';
+ blinkTimer=setInterval(()=>setBlinkSide(state.blinkSide==='old'?'new':'old'),+$('blinkSpeed').value);
+});
+$('blinkSpeed').addEventListener('change',()=>{if(blinkTimer){stopBlink();$('autoBlink').click()}});
+$('mode').addEventListener('change',stopBlink);
+$('generate').addEventListener('click',stopBlink);
+// Animated WebP RIFF muxer: frames encoded natively by the browser as full-colour WebP.
+// ANMF requires VP8/VP8L subchunks, stored in each frame's WebP RIFF payload.
+function fourcc(s){return [...s].map(c=>c.charCodeAt(0))}
+function u24(n){return [n&255,(n>>8)&255,(n>>16)&255]}
+function u32(n){return [n&255,(n>>8)&255,(n>>16)&255,(n>>24)&255]}
+function chunk(tag,data){return [...fourcc(tag),...u32(data.length),...data,...(data.length%2?[0]:[])]}
+async function canvasWebP(canvas){const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/webp',.94));if(!blob||blob.type!=='image/webp')throw Error('目前瀏覽器不支援 WebP 編碼');return new Uint8Array(await blob.arrayBuffer())}
+function webpFrameChunks(bytes){
+ const chunks=[];for(let i=12;i+8<=bytes.length;){
+  const tag=String.fromCharCode(bytes[i],bytes[i+1],bytes[i+2],bytes[i+3]);
+  const len=(bytes[i+4]|bytes[i+5]<<8|bytes[i+6]<<16|bytes[i+7]<<24)>>>0;
+  const end=i+8+len+(len%2);
+  if(end>bytes.length)throw Error('WebP frame 資料不完整');
+  if(tag==='VP8 '||tag==='VP8L'||tag==='ALPH')chunks.push(bytes.subarray(i,end));
+  i=end;
+ }
+ if(!chunks.length)throw Error('WebP frame 編碼格式不支援');return chunks;
+}
+// Construct RIFF as Blob segments: never spread multi-megabyte frames into JS argument lists.
+function riffChunk(tag,parts){
+ const size=parts.reduce((n,p)=>n+p.byteLength,0);
+ return {size:8+size+(size%2),parts:[Uint8Array.from([...fourcc(tag),...u32(size)]),...parts,...(size%2?[new Uint8Array(1)]:[])]};
+}
+function animatedWebP(frames,w,h,delay){
+ const vp8x=riffChunk('VP8X',[Uint8Array.from([0x02,0,0,0,...u24(w-1),...u24(h-1)])]);
+ const anim=riffChunk('ANIM',[Uint8Array.from([255,255,255,255,0,0])]);
+ const anmfs=frames.map(frame=>{
+  const frameData=webpFrameChunks(frame);
+  return riffChunk('ANMF',[Uint8Array.from([...u24(0),...u24(0),...u24(w-1),...u24(h-1),...u24(delay),0]),...frameData]);
+ });
+ const chunks=[vp8x,anim,...anmfs];
+ const total=4+chunks.reduce((n,c)=>n+c.size,0);
+ return new Blob([Uint8Array.from([...fourcc('RIFF'),...u32(total),...fourcc('WEBP')]),...chunks.flatMap(c=>c.parts)],{type:'image/webp'});
+}
+async function exportAnimation(region){
+ const s=state.sheets[state.current];
+ const choice=$('webpResolution').value;
+ const sx=region?Math.floor(region.x*s.w):0,sy=region?Math.floor(region.y*s.h):0;
+ const sw=region?Math.max(1,Math.min(s.w-sx,Math.ceil(region.w*s.w))):s.w;
+ const sh=region?Math.max(1,Math.min(s.h-sy,Math.ceil(region.h*s.h))):s.h;
+ const maxSide=choice==='original'?Math.max(sw,sh):Number(choice);
+ const ratio=Math.min(1,maxSide/Math.max(sw,sh));
+ const w=Math.max(1,Math.round(sw*ratio)),h=Math.max(1,Math.round(sh*ratio));
+ if(w>16383||h>16383)throw Error('WebP 單邊不可超過 16383px');
+ if(w*h>60000000)throw Error('動畫超過 6000 萬像素；請縮小範圍或降低解析度');
+ // Export the actual source pixels in the chosen region, not a cropped low-res preview.
+ const exportStyle=$('v19ExportStyle').value;
+ const framed=exportStyle==='viewer';
+ const headerH=framed?Math.max(42,Math.min(116,Math.round(w*.020))):0;
+ const outW=w,outH=h+headerH;
+ if(outH>16383)throw Error('WebP height exceeds 16383px including header');
+ if(outW*outH>60000000)throw Error('Animation exceeds 60 million pixels; lower resolution or select a smaller detail');
+ const make=(source,dx,dy,side)=>{
+  const c=document.createElement('canvas');c.width=outW;c.height=outH;
+  const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,outW,outH);
+  x.drawImage(source,dx*ratio-sx*ratio,headerH+dy*ratio-sy*ratio,s.w*ratio,s.h*ratio);
+  if(framed){
+   // The header is outside the drawing and remains geometrically identical in both frames.
+   x.fillStyle='#1b2635';x.fillRect(0,0,outW,headerH);
+   x.fillStyle='#334458';x.fillRect(0,headerH-1,outW,1);
+   const fs=Math.max(12,Math.min(31,Math.round(headerH*.30)));
+   const pad=Math.max(14,Math.round(headerH*.28));
+   x.textBaseline='middle';x.font='600 '+fs+'px Arial, sans-serif';x.fillStyle='#edf3fb';
+   x.fillText('Drawing Overlay',pad,headerH/2);
+   const titleWidth=x.measureText('Drawing Overlay').width;
+   x.font='400 '+Math.max(10,Math.round(fs*.72))+'px Arial, sans-serif';x.fillStyle='#8da1bb';
+   if(outW>720)x.fillText(' /  COMPARISON',pad+titleWidth+Math.round(fs*.6),headerH/2);
+   // Optional state label, set by the existing WebP label checkbox.
+   if($('webpLabels').checked){
+    const label=side==='old'?'PREVIOUS':'CURRENT';
+    const badgeW=Math.max(105,Math.round(fs*7.2)),badgeH=Math.max(26,Math.round(headerH*.58));
+    const bx=outW-pad-badgeW,by=Math.round((headerH-badgeH)/2);
+    x.fillStyle=side==='old'?'#594432':'#2e445c';x.fillRect(bx,by,badgeW,badgeH);
+    x.strokeStyle=side==='old'?'#7b6047':'#496781';x.lineWidth=1;x.strokeRect(bx+.5,by+.5,badgeW-1,badgeH-1);
+    const dotR=Math.max(3,Math.round(fs*.16));
+    x.beginPath();x.arc(bx+Math.round(badgeH*.55),headerH/2,dotR,0,Math.PI*2);
+    x.fillStyle=side==='old'?'#d69b55':'#65a5f0';x.fill();
+    x.fillStyle='#f5f8fc';x.font='600 '+Math.max(11,Math.round(fs*.76))+'px Arial, sans-serif';
+    x.fillText(label,bx+Math.round(badgeH*.95),headerH/2);
+   }
+   x.textBaseline='alphabetic';
+  }
+  return c;
+ };
+ status('正在編碼 '+(region?'局部':'全圖')+' Animated WebP · '+outW+' × '+outH+'…');
+ await new Promise(r=>setTimeout(r,30));
+ const oldFrame=await canvasWebP(make(s.oldCanvas,0,0,'old'));
+ await new Promise(r=>setTimeout(r,0));
+ const newFrame=await canvasWebP(make(s.newCanvas,s.dx,s.dy,'new'));
+ const webp=animatedWebP([oldFrame,newFrame],outW,outH,+$('blinkSpeed').value);
+ const base=s.label.replace(/[^a-zA-Z0-9_-]/g,'_');
+ saveBlob(webp,(region?'detail_':'full_')+'blink_'+base+'.webp');
+ status((region?'局部':'全圖')+' Animated WebP 已匯出 '+outW+' × '+outH+' px · '+(webp.size/1048576).toFixed(1)+' MB');
+}
+async function runAnimationExport(region,button){
+ if(!state.sheets.length)return;
+ button.disabled=true;
+ try{await exportAnimation(region)}catch(e){console.error(e);status('Animated WebP 匯出失敗：'+e.message)}
+ finally{button.disabled=false}
+}
+$('exportWebP').addEventListener('click',()=>runAnimationExport(null,$('exportWebP')));
+$('exportDetail').addEventListener('click',()=>{if(detailRegion)runAnimationExport({...detailRegion},$('exportDetail'))});
+const enableWebP=()=>{$('exportWebP').disabled=!state.sheets.length};
+$('generate').addEventListener('click',()=>setTimeout(enableWebP,1000));
+const originalShow=show;show=function(i){originalShow(i);enableWebP()};
+
+/* V18 UI preferences: language is applied to text nodes, preserving controls and their event handlers. */
+const v18Translations={"工程圖新舊版本疊合比對 · Classic / Colour Blend / Change Highlight · PDF → PNG": "Engineering drawing revision comparison · Classic / Colour Blend / Change Highlight · PDF → PNG", "主題": "Theme", "語言": "Language", "Local Processing · 本機處理": "Local Processing · On-device", "1 · 上傳圖面": "1 · Upload Drawings", "2 · 疊圖模式與顏色": "2 · Overlay Mode & Colours", "3 · 對齊微調": "3 · Alignment Adjustment", "📄 舊版 PDF": "📄 OLD PDF", "📄 新版 PDF": "📄 NEW PDF", "點擊選擇，可一次上傳多張": "Click to select multiple files", "尚未選擇檔案": "No file selected", "依檔名末尾圖號自動配對，例如 2025-03191-31_1.pdf 與 2025-03191-31_2.pdf。也支援單份多頁 PDF。": "Automatically matches sheet numbers in filenames, e.g. 2025-03191-31_1.pdf and 2025-03191-31_2.pdf. Multi-page PDFs supported.", "選擇工程疊圖風格": "Choose an overlay preset", "點擊即可套用": "Click to apply", "紅青高對比，快速辨識管線與尺寸變更": "High-contrast red/cyan for revision spotting", "新版黑色優先，舊版琥珀黃作為參考": "Current drawing in black; old drawing in amber", "藍色舊版＋琥珀黃新版，讓更新線條亮起來": "Old in blue, new in amber for visible revisions", "自行調整新舊顏色及透明度，儲存在本機": "Customise colours and opacity, saved locally", "紅青雙色錯位，快速辨識修訂位置。": "Red/cyan offset makes revisions easy to spot.", "儲存我的設定（本機）": "Save My Settings (local)", "目前可儲存在這個瀏覽器；註冊登入及跨裝置同步尚未實作。": "Settings are saved in this browser; account sync is not available.", "疊圖方式": "Overlay Mode", "Classic · 透明疊圖（推薦）": "Classic · Transparent Overlay (recommended)", "Difference · 差異分類（黑白圖）": "Difference · Classified Changes (monochrome)", "Original Colour Blend · 保留原始彩色": "Original Colour Blend · Preserve Colours", "Difference Heatmap · 彩圖變更標示": "Difference Heatmap · Colour Change Highlight", "Blink Compare · 新舊切換": "Blink Compare · Switch OLD / NEW", "Split View · 左右並排": "Split View · Side by Side", "差異敏感度": "Change Sensitivity", "差異標記": "Highlight Colour", " 排除圖框（只比較中央區域）": " Exclude Border (compare centre only)", "邊界 %": "Margin %", "圖層混色方式": "Layer Blend Order", "Balanced Blend · 對稱混色": "Balanced Blend · Symmetric", "NEW on Top · 新版在上": "NEW on Top", "OLD on Top · 舊版在上": "OLD on Top", "Balanced Blend 不受圖層上下順序影響；兩版交疊時會混色。": "Balanced Blend is independent of layer order; overlapping lines blend.", "新版（New）": "NEW Drawing", "舊版（Old）": "OLD Drawing", "不透明度 ": "Opacity ", "⇄ 互換 NEW / OLD 顏色": "⇄ Swap NEW / OLD Colours", "重合（Unchanged）": "Unchanged", "輸出解析度": "Output Resolution", "中（約 2000px）": "Medium (approx. 2000px)", "高（約 3000px）": "High (approx. 3000px)", "超高（約 5000px）": "Ultra (approx. 5000px)", "線條容差 ": "Line Tolerance ", " 自動微調對齊（小幅平移）": " Auto Align (small offsets)", "彩色圖建議先用 Blink Compare（按住 OLD 可快速對照）或 Split View；Difference Heatmap 只標示疑似像素差異。Classic 直接把兩張完整圖面以透明色彩疊合，不會將重合線條切碎；Difference 才會依像素分類重合區域。自動對齊以全頁影像估算，仍可手動修正。": "For colour drawings, use Blink Compare or Split View. Heatmap shows possible pixel differences. Classic blends complete drawings without fragmenting common lines; Difference classifies pixels. Auto Align estimates full-page offset; manual adjustment remains available.", "產生疊圖": "Generate Overlay", "等待上傳 PDF": "Waiting for PDFs", "新版水平位移 X（px）": "NEW Horizontal Offset X (px)", "新版垂直位移 Y（px）": "NEW Vertical Offset Y (px)", "套用位移及顏色": "Apply Offset & Colours", "正數往右／下移。位移以目前輸出 PNG 的像素為單位。調整後不需要重新上傳。": "Positive values move right/down. Offsets use output PNG pixels. No re-upload needed.", "疊圖預覽": "Overlay Preview", "黑白圖可用 Classic；彩圖建議 Blink Compare / Split View / Difference Heatmap": "Classic for monochrome; Blink / Split / Heatmap for colour drawings", "請先產生疊圖": "Generate an overlay first", "按住看 OLD · 放開回 NEW": "Hold for OLD · Release for NEW", "也可按住 Space 空白鍵暫看舊版": "Or hold Space to view OLD", "即時預覽": "Live Preview", "快速 · 1000px": "Fast · 1000px", "清晰 · 1600px": "Clear · 1600px", "細緻 · 2400px": "Detailed · 2400px", "超清晰 · 4000px": "Ultra · 4000px", "原始解析度（較慢）": "Original Resolution (slower)", "WebP 畫質": "WebP Quality", "標準 · 3200px": "Standard · 3200px", "高畫質 · 4800px": "High · 4800px", "超高畫質 · 6400px": "Ultra · 6400px", "原始圖面解析度": "Original Drawing Resolution", " WebP 顯示 OLD / NEW 標籤": " Show OLD / NEW labels in WebP", "下載全圖 WebP": "Export Full WebP", "▱ 框選局部": "▱ Select Detail", "下載局部 WebP": "Export Detail WebP", "取消框選": "Clear Selection", "放大後直接拖曳圖面平移 · Ctrl+滾輪縮放": "Drag to pan · Ctrl+wheel to zoom", "上傳兩版 PDF，點擊「產生疊圖」": "Upload OLD and NEW PDFs, then Generate Overlay", "全圖放大與手掌拖曳照常使用；需要局部動畫時，點「框選局部」再在圖面上拖曳範圍。": "Zoom and drag the full drawing as usual. To export a detail animation, choose Select Detail and drag a rectangle.", "新版": "NEW", "舊版": "OLD", "重合": "Unchanged", "下載目前 PNG": "Download Current PNG", "下載全部 ZIP": "Download All ZIP", "重要：本工具使用像素疊圖，適合快速找出候選差異，不能單憑顏色判定工程變更。需檢查文字、尺寸、線寬及圖面對齊。PDF 不會上傳至網站伺服器；首次開啟需網路載入 PDF 處理程式。": "Important: Pixel comparison helps identify possible revisions but is not a substitute for checking annotations, dimensions, line weights and alignment. PDFs are processed locally; initial loading requires an internet connection for the PDF library."};
+const v18NodeRecords=[];
+function v18CollectTranslations(){
+ const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+ while(walker.nextNode()){
+  const node=walker.currentNode;
+  if(node.parentElement?.closest('script,style'))continue;
+  const raw=node.nodeValue,trim=raw.trim();
+  if(v18Translations[trim])v18NodeRecords.push({node,raw,translated:v18Translations[trim]});
+ }
+}
+function v18ApplyLanguage(lang){
+ document.documentElement.lang=lang==='en'?'en':'zh-Hant';
+ for(const {node,raw,translated} of v18NodeRecords){
+  const left=raw.match(/^\s*/)?.[0]||'',right=raw.match(/\s*$/)?.[0]||'';
+  node.nodeValue=lang==='en'?left+translated+right:raw;
+ }
+ document.title=lang==='en'?'Drawing Overlay — Engineering Revision Comparison':'Drawing Overlay — 工程圖版本比對';
+}
+function v18Preference(key,fallback){try{return localStorage.getItem('drawingOverlayV18_'+key)||fallback}catch{return fallback}}
+function v18Save(key,value){try{localStorage.setItem('drawingOverlayV18_'+key,value)}catch{}}
+function v18ApplyTheme(value){document.documentElement.dataset.theme=value;v18Save('theme',value)}
+v18CollectTranslations();
+$('themeChoice').value=v18Preference('theme','light');
+$('langChoice').value=v18Preference('lang','zh');
+v18ApplyTheme($('themeChoice').value);
+v18ApplyLanguage($('langChoice').value);
+$('themeChoice').addEventListener('change',e=>v18ApplyTheme(e.target.value));
+$('langChoice').addEventListener('change',e=>{v18Save('lang',e.target.value);v18ApplyLanguage(e.target.value)});
+
+
+/* V19 Focus mode and terminology / language coverage. */
+const v19Main=document.querySelector('main');
+let v19Focus=false;
+function v19SetFocus(on){
+ v19Focus=!!on;v19Main.classList.toggle('v19-focus',v19Focus);
+ $('focusToggle').textContent=v19Focus?(v19IsEnglish()?'⤢ Exit Full Screen':'⤢ 退出全螢幕'):(v19IsEnglish()?'⛶ Full Screen':'⛶ 全螢幕');
+ document.body.style.overflow=v19Focus?'hidden':'';
+ requestAnimationFrame(()=>{if(typeof updateZoom==='function')updateZoom();});
+}
+$('focusToggle').addEventListener('click',()=>v19SetFocus(!v19Focus));
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&v19Focus){v19SetFocus(false);e.preventDefault();}});
+function v19IsEnglish(){return $('langChoice').value==='en'}
+try{$('v19ExportStyle').value=localStorage.getItem('drawing-overlay-v19-export-style')||'viewer'}catch(e){}
+$('v19ExportStyle').addEventListener('change',()=>{try{localStorage.setItem('drawing-overlay-v19-export-style',$('v19ExportStyle').value)}catch(e){}});
+// The legacy translation pass covers original DOM nodes; V19 translates runtime labels as well.
+const v19TextPairs=[
+ ['新版（New）','Current Drawing'],['舊版（Old）','Previous Drawing'],
+ ['📄 舊版 PDF','📄 Previous PDF'],['📄 新版 PDF','📄 Current PDF'],
+ ['⇄ 互換 NEW / OLD 顏色','⇄ Swap CURRENT / PREVIOUS Colours'],
+ [' WebP 顯示 OLD / NEW 標籤',' Show CURRENT / PREVIOUS in WebP'],
+ ['按住看 OLD · 放開回 NEW','Hold for PREVIOUS · Release for CURRENT'],
+ ['也可按住 Space 空白鍵暫看舊版','Or hold Space to view PREVIOUS'],
+ ['▱ 框選局部','▱ Select Detail'],['▱ Select Detail','▱ Select Detail'],
+ ['下載全圖 WebP','Export Full WebP'],['下載局部 WebP','Export Detail WebP'],
+ ['取消框選','Clear Selection'],['套用位移及顏色','Apply Offset & Colours'],
+ ['自動微調對齊（小幅平移）','Auto Align (small offsets)'],
+ ['WebP 樣式','WebP Style'],['全螢幕','Full Screen'],['退出全螢幕','Exit Full Screen'],
+ ['正在編碼','Encoding'],['已匯出','Exported'],['匯出失敗','Export failed'],
+ ['預覽 ','Preview '],[' · 匯出 ',' · Export '],['全圖','Full Drawing'],['局部','Detail'],
+ ['舊版','Previous'],['新版','Current'],['新圖','Current'],['舊圖','Previous'],
+ ['新版水平位移','Current Horizontal Offset'],['新版垂直位移','Current Vertical Offset'],
+ ['下載目前 PNG','Download Current PNG'],['下載全部 ZIP','Download All ZIP'],
+ ['上傳兩版 PDF，點擊「產生疊圖」','Upload both PDFs, then select Generate Overlay'],
+ ['產生疊圖','Generate Overlay'],['等待上傳 PDF','Waiting for PDFs'],
+ ['已完成','Completed'],['失敗','Failed'],['未選擇','Not selected'],
+ ['按住','Hold'],['放開','Release'],['暫看','View temporarily'],
+ ['選擇','Select'],['對齊','Alignment'],['顏色','Colours'],['不透明度','Opacity'],
+ ['下載','Download'],['套用','Apply'],['正在','Processing'],['完成','Complete']
+];
+const v19OriginalText=new WeakMap();
+const v19OriginalAttrs=new WeakMap();
+function v19TranslateText(str){
+ let out=str;
+ for(const [zh,en] of v19TextPairs)out=out.split(zh).join(en);
+ return out.replace(/\bNEW\b/g,'CURRENT').replace(/\bOLD\b/g,'PREVIOUS');
+}
+function v19Apply(){
+ const en=v19IsEnglish();
+ {const v=en?'WebP Style':'WebP 樣式';if($('v19ExportStyleLabel').textContent!==v)$('v19ExportStyleLabel').textContent=v;}
+ {const v=v19Focus?(en?'⤢ Exit Full Screen':'⤢ 退出全螢幕'):(en?'⛶ Full Screen':'⛶ 全螢幕');if($('focusToggle').textContent!==v)$('focusToggle').textContent=v;}
+ // Static terminology and runtime labels, without replacing event-bound elements.
+ for(const el of document.querySelectorAll('body *')){
+  if(el.closest('svg,script,style'))continue;
+  for(const node of el.childNodes){
+   if(node.nodeType!==Node.TEXT_NODE)continue;
+   const raw=node.nodeValue;
+   if(!raw||!raw.trim())continue;
+   if(!v19OriginalText.has(node))v19OriginalText.set(node,raw);
+   const baseline=v19OriginalText.get(node);
+   // For nodes owned by V18 translations, use their currently selected language text.
+   if(en){const updated=v19TranslateText(raw);if(updated!==raw)node.nodeValue=updated;}
+   else if(/CURRENT|PREVIOUS/.test(raw)&&/NEW|OLD/.test(baseline))node.nodeValue=baseline.replace(/\bNEW\b/g,'CURRENT').replace(/\bOLD\b/g,'PREVIOUS');
+  }
+ }
+}
+$('langChoice').addEventListener('change',()=>setTimeout(v19Apply,0));
+// MutationObserver catches dynamically regenerated status text and buttons.
+let v19TranslationBusy=false;
+const v19Observer=new MutationObserver(()=>{
+ if(v19TranslationBusy)return;
+ v19TranslationBusy=true;
+ try{v19Apply()}finally{v19TranslationBusy=false;}
+});
+v19Observer.observe(document.body,{subtree:true,childList:true,characterData:true});
+v19Apply();
+</script></body></html>
